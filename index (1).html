@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oil, Pivots & Fault-Finding — A Visual Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@300;400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f3ed;
+    --surface: #ede8df;
+    --card: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --ink: #1a1510;
+    --muted: #6b5f4e;
+    --steel: #2c3e50;
+    --gold: #b8840a;
+    --gold-light: #d4a82a;
+    --oil: #4a9080;
+    --oil-light: #6ab8a8;
+    --danger: #c0392b;
+    --warn: #e67e22;
+    --ok: #27ae60;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: 'Inter', sans-serif; font-weight: 300; line-height: 1.75; }
+
+  .hero { background: var(--steel); color: #e8e0d0; padding: 80px 32px 64px; text-align: center; position: relative; overflow: hidden; }
+  .hero::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--oil), var(--gold), var(--oil)); }
+  .hero-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 5px; color: var(--oil-light); text-transform: uppercase; margin-bottom: 18px; }
+  .hero h1 { font-family: 'Lora', serif; font-size: clamp(36px, 6vw, 68px); font-weight: 400; line-height: 1.15; margin-bottom: 16px; color: #f0ead8; }
+  .hero h1 em { font-style: italic; color: var(--oil-light); }
+  .hero-sub { font-size: 16px; color: #9a8f7e; max-width: 560px; margin: 0 auto 36px; }
+  .drop-container { display: flex; gap: 20px; justify-content: center; margin: 10px 0; }
+  .drop { width: 16px; height: 20px; background: var(--oil); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; animation: drip 2s ease-in-out infinite; opacity: 0.8; }
+  .drop:nth-child(2) { animation-delay: 0.4s; background: var(--oil-light); }
+  .drop:nth-child(3) { animation-delay: 0.8s; }
+  @keyframes drip { 0%,100% { transform: translateY(0) scale(1); opacity: 0.8; } 50% { transform: translateY(8px) scale(0.9); opacity: 0.5; } }
+
+  .nav { background: var(--steel); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; gap: 6px; padding: 14px 24px; flex-wrap: wrap; position: sticky; top: 0; z-index: 100; justify-content: center; }
+  .nav a { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #7a8a9a; text-decoration: none; padding: 5px 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.2s; }
+  .nav a:hover { color: var(--oil-light); border-color: var(--oil); background: rgba(74,144,128,0.1); }
+
+  .container { max-width: 940px; margin: 0 auto; padding: 0 24px; }
+  .section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+  .section-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 4px; color: var(--oil); text-transform: uppercase; margin-bottom: 6px; }
+  .section h2 { font-family: 'Lora', serif; font-size: clamp(26px, 4vw, 42px); font-weight: 400; color: var(--ink); margin-bottom: 16px; line-height: 1.2; }
+  .section > .container > p { font-size: 15.5px; max-width: 700px; margin-bottom: 14px; color: #3a3025; }
+  .rule { width: 48px; height: 3px; background: var(--oil); margin: 8px 0 18px; border-radius: 2px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 24px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .card-icon { font-size: 24px; margin-bottom: 10px; }
+  .card h3 { font-family: 'Lora', serif; font-size: 17px; margin-bottom: 6px; color: var(--ink); }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .card-accent { border-top: 3px solid var(--oil); }
+  .card-warn { border-top: 3px solid var(--warn); }
+  .card-danger { border-top: 3px solid var(--danger); }
+  .card-ok { border-top: 3px solid var(--ok); }
+
+  .vis { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 28px 32px; margin: 24px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .vis h3 { font-family: 'Lora', serif; font-size: 19px; color: var(--steel); margin-bottom: 18px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+  .info-card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .info-header { padding: 10px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 1px; color: white; text-transform: uppercase; background: var(--steel); }
+  .info-header.oil { background: var(--oil); }
+  .info-header.warn { background: var(--warn); }
+  .info-header.danger { background: var(--danger); }
+  .info-body { padding: 16px; font-size: 13.5px; color: var(--muted); line-height: 1.65; }
+  .info-body strong { color: var(--ink); }
+
+  .callout { border-left: 3px solid var(--oil); padding: 14px 20px; background: rgba(74,144,128,0.06); border-radius: 0 4px 4px 0; margin: 18px 0; font-size: 14.5px; color: #2a3a35; }
+  .callout.warn { border-color: var(--warn); background: rgba(230,126,34,0.06); color: #3a2510; }
+  .callout strong { color: var(--ink); }
+
+  .badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; display: inline-block; margin-bottom: 5px; }
+  .b-danger { background: rgba(192,57,43,0.12); color: var(--danger); }
+  .b-warn { background: rgba(230,126,34,0.12); color: var(--warn); }
+  .b-ok { background: rgba(39,174,96,0.12); color: var(--ok); }
+  .b-oil { background: rgba(74,144,128,0.12); color: var(--oil); }
+
+  .fault-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+  .fault-row { display: flex; gap: 14px; align-items: flex-start; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .fault-icon { font-size: 22px; flex-shrink: 0; width: 36px; text-align: center; margin-top: 2px; }
+  .fault-text h4 { font-size: 15px; color: var(--ink); margin-bottom: 4px; font-weight: 500; }
+  .fault-text p { font-size: 13px; color: var(--muted); }
+
+  .stop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 20px; }
+  .stop-card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .stop-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--oil); margin-bottom: 6px; letter-spacing: 2px; }
+  .stop-card h4 { font-size: 14px; font-weight: 500; margin-bottom: 6px; color: var(--ink); }
+  .stop-card p { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+  .stop-card.top { border-top: 3px solid var(--danger); }
+  .stop-card.mid { border-top: 3px solid var(--warn); }
+  .stop-card.low { border-top: 3px solid var(--oil); }
+
+  .oil-demo { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+  .oil-scenario { flex: 1; min-width: 160px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 16px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .oil-scenario h4 { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--oil); margin-bottom: 12px; }
+  .oil-result { margin-top: 10px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .oil-result strong { display: block; font-size: 13px; margin-bottom: 4px; }
+
+  .quiz-panel { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 24px; margin: 20px 0; }
+  .quiz-panel h3 { font-family: 'Lora', serif; font-size: 18px; color: var(--steel); margin-bottom: 16px; }
+  .quiz-q { margin-bottom: 18px; }
+  .quiz-q p { font-size: 14px; color: var(--ink); margin-bottom: 10px; font-weight: 400; }
+  .quiz-options { display: flex; gap: 8px; flex-wrap: wrap; }
+  .quiz-btn { padding: 7px 16px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+  .quiz-btn:hover { border-color: var(--oil); color: var(--oil); }
+  .quiz-btn.correct { background: rgba(39,174,96,0.15); border-color: var(--ok); color: var(--ok); }
+  .quiz-btn.wrong { background: rgba(192,57,43,0.1); border-color: var(--danger); color: var(--danger); }
+  .quiz-feedback { font-size: 13px; margin-top: 8px; color: var(--muted); display: none; }
+
+  .calc-panel { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 28px; margin: 24px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .calc-panel h3 { font-family: 'Lora', serif; font-size: 19px; color: var(--steel); margin-bottom: 20px; }
+  .calc-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+  .calc-row label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); min-width: 160px; letter-spacing: 0.5px; text-transform: uppercase; }
+  input[type=range] { flex: 1; min-width: 140px; accent-color: var(--oil); cursor: pointer; }
+  .calc-val { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--oil); min-width: 80px; }
+  .result-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 16px 20px; }
+  .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  .result-item { text-align: center; }
+  .result-num { font-family: 'Lora', serif; font-size: 28px; color: var(--steel); display: block; }
+  .result-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  .insight-box { background: var(--steel); color: #e8e0d0; border-radius: 8px; padding: 40px; margin: 32px 0; text-align: center; }
+  .insight-box h3 { font-family: 'Lora', serif; font-size: 24px; color: var(--oil-light); margin-bottom: 14px; }
+  .insight-box p { color: #9a8f7e; max-width: 560px; margin: 0 auto; font-size: 15px; }
+  .big-em { font-family: 'Lora', serif; font-style: italic; font-size: clamp(18px, 2.5vw, 26px); color: #f0ead8; margin: 16px 0; line-height: 1.5; display: block; }
+
+  footer { text-align: center; padding: 32px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 2px; color: var(--muted); border-top: 1px solid var(--border); text-transform: uppercase; background: var(--surface); }
+  svg text { font-family: 'Inter', sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-tag">Watchmaking Fundamentals — Part III</div>
+  <h1>Oil, Pivots &<br><em>Fault-Finding</em></h1>
+  <p class="hero-sub">Master how oil behaves, how pivots work, and how to diagnose why any mechanical watch stops — the core troubleshooting skills of a pro watchmaker.</p>
+  <div class="drop-container">
+    <div class="drop"></div><div class="drop"></div><div class="drop"></div>
+  </div>
+</div>
+
+<nav class="nav">
+  <a href="#oil">Oil Behaviour</a>
+  <a href="#pivots">Pivot Types</a>
+  <a href="#sizing">Sizing & Shake</a>
+  <a href="#defects">Pivot Defects</a>
+  <a href="#oscillator">Oscillator</a>
+  <a href="#faultfinding">Fault-Finding</a>
+  <a href="#stops">Why It Stops</a>
+</nav>
+
+<!-- SECTION 1: OIL -->
+<div class="section" id="oil">
+  <div class="container">
+    <div class="section-tag">01 — Oil Behaviour</div>
+    <h2>The Four Laws of Oil in a Watch</h2>
+    <div class="rule"></div>
+    <p>Before you can correctly lubricate a movement, you need to understand something counterintuitive: oil doesn't stay where you put it. It moves — and the shape of surrounding surfaces determines exactly where it goes. Misunderstanding this causes oil to migrate somewhere it will cause damage.</p>
+    <p>Memorise these four rules. They apply equally to flat surfaces (pallet stones) and cylindrical ones (pivots).</p>
+
+    <div class="oil-demo">
+      <div class="oil-scenario">
+        <h4>Internal Corner</h4>
+        <svg viewBox="0 0 110 100" width="100">
+          <rect x="10" y="55" width="55" height="35" fill="#d0cac0" rx="1"/>
+          <rect x="65" y="10" width="35" height="80" fill="#d0cac0" rx="1"/>
+          <circle cx="65" cy="55" r="13" fill="rgba(74,144,128,0.5)"/>
+          <circle cx="65" cy="55" r="7" fill="var(--oil)"/>
+          <text x="55" y="95" text-anchor="middle" fill="#6b5f4e" font-size="9">Oil POOLS here</text>
+        </svg>
+        <div class="oil-result">
+          <strong style="color:var(--ok)">Oil is ATTRACTED</strong>
+          Sharper corner = stronger pull. Radiusing the corner reduces the effect.
+        </div>
+      </div>
+      <div class="oil-scenario">
+        <h4>External Corner</h4>
+        <svg viewBox="0 0 110 100" width="100">
+          <rect x="25" y="10" width="35" height="65" fill="#d0cac0" rx="1"/>
+          <rect x="60" y="45" width="45" height="45" fill="#d0cac0" rx="1"/>
+          <circle cx="60" cy="45" r="5" fill="rgba(74,144,128,0.25)"/>
+          <line x1="60" y1="45" x2="42" y2="27" stroke="var(--oil)" stroke-width="1.5" stroke-dasharray="3,2"/>
+          <text x="55" y="95" text-anchor="middle" fill="#6b5f4e" font-size="9">Oil REPELLED</text>
+        </svg>
+        <div class="oil-result">
+          <strong style="color:var(--danger)">Oil is REPELLED</strong>
+          Used deliberately to stop oil migrating where it shouldn't go.
+        </div>
+      </div>
+      <div class="oil-scenario">
+        <h4>Smooth Surface</h4>
+        <svg viewBox="0 0 110 100" width="100">
+          <rect x="10" y="42" width="90" height="18" fill="#d0cac0" rx="2"/>
+          <ellipse cx="28" cy="42" rx="12" ry="5" fill="var(--oil)" opacity="0.7"/>
+          <ellipse cx="50" cy="42" rx="8" ry="4" fill="var(--oil)" opacity="0.45"/>
+          <ellipse cx="70" cy="42" rx="5" ry="3" fill="var(--oil)" opacity="0.25"/>
+          <text x="55" y="80" text-anchor="middle" fill="#6b5f4e" font-size="9">Oil CREEPS along</text>
+        </svg>
+        <div class="oil-result">
+          <strong style="color:var(--warn)">Oil CREEPS</strong>
+          Slowly migrates along smooth surfaces and around internal discontinuities.
+        </div>
+      </div>
+      <div class="oil-scenario">
+        <h4>Sharp Step</h4>
+        <svg viewBox="0 0 110 100" width="100">
+          <rect x="10" y="30" width="50" height="20" fill="#d0cac0" rx="1"/>
+          <rect x="60" y="50" width="45" height="20" fill="#d0cac0" rx="1"/>
+          <ellipse cx="35" cy="30" rx="14" ry="5" fill="var(--oil)" opacity="0.7"/>
+          <text x="83" y="46" text-anchor="middle" fill="var(--ok)" font-size="8">stops</text>
+          <text x="55" y="80" text-anchor="middle" fill="#6b5f4e" font-size="9">Step STOPS creep</text>
+        </svg>
+        <div class="oil-result">
+          <strong style="color:var(--ok)">Creep STOPS</strong>
+          A sharp external edge acts as a dam — oil won't cross it. This principle is used everywhere in watch design.
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:24px;">
+      <strong>Why this matters:</strong> This is exactly why conical pivot shoulders are angled (stops oil migrating up the arbor), why oil sinks are machined into pivot holes (sharp edge traps the oil), and why you must never over-oil — excess oil will creep to dry areas and cause damage.
+    </div>
+
+    <div class="quiz-panel" style="margin-top:28px;">
+      <h3>🎯 Quick Check</h3>
+      <div class="quiz-q" id="q1">
+        <p>1. A pivot shoulder has a sharp <em>external</em> corner. What does oil do?</p>
+        <div class="quiz-options">
+          <button class="quiz-btn" onclick="answer(this,'q1',false)">Pools at the corner</button>
+          <button class="quiz-btn" onclick="answer(this,'q1',true)">Gets repelled away from it</button>
+          <button class="quiz-btn" onclick="answer(this,'q1',false)">Creeps over it freely</button>
+        </div>
+        <div class="quiz-feedback" id="q1-fb">✓ Correct! Sharp external corners repel oil — deliberately used to contain oil at the pivot.</div>
+      </div>
+      <div class="quiz-q" id="q2">
+        <p>2. Why does a pivot hole have an oil sink (shallow recess) machined around it?</p>
+        <div class="quiz-options">
+          <button class="quiz-btn" onclick="answer(this,'q2',false)">To reduce the bearing surface</button>
+          <button class="quiz-btn" onclick="answer(this,'q2',true)">To trap oil using the sharp edge of the recess</button>
+          <button class="quiz-btn" onclick="answer(this,'q2',false)">To make drilling easier</button>
+        </div>
+        <div class="quiz-feedback" id="q2-fb">✓ Correct! The sharp edge of the oil sink stops oil from creeping away across the plate, keeping lubrication exactly at the pivot.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 2: PIVOT TYPES -->
+<div class="section" id="pivots">
+  <div class="container">
+    <div class="section-tag">02 — Pivot Types</div>
+    <h2>The Four Types of Watch Pivot</h2>
+    <div class="rule"></div>
+    <p>A pivot is the narrowed end of an arbor (shaft) that sits and turns in a pivot hole. There are four distinct designs, each with different trade-offs for friction, oil retention, shock resistance, and ease of manufacturing.</p>
+
+    <div class="vis">
+      <h3>📐 Pivot Designs Compared</h3>
+      <svg viewBox="0 0 680 210" width="100%" style="max-width:680px; display:block; margin:0 auto;">
+        <!-- 1. STRAIGHT -->
+        <g transform="translate(15,10)">
+          <text x="42" y="14" text-anchor="middle" fill="var(--ok)" font-size="10">Most Common</text>
+          <rect x="32" y="20" width="20" height="90" fill="#c8c0b4" rx="2"/>
+          <rect x="38" y="45" width="8" height="55" fill="#aaa" rx="1"/>
+          <rect x="32" y="110" width="20" height="8" fill="#b0a898"/>
+          <rect x="20" y="118" width="44" height="22" fill="#6b8090" rx="2" opacity="0.6"/>
+          <circle cx="42" cy="129" r="5" fill="#4a6070"/>
+          <text x="42" y="160" text-anchor="middle" fill="#555" font-size="11">1. Straight</text>
+          <text x="42" y="173" text-anchor="middle" fill="var(--muted)" font-size="10">Shoulder controls end-shake</text>
+        </g>
+
+        <!-- 2. CONICAL -->
+        <g transform="translate(175,10)">
+          <text x="42" y="14" text-anchor="middle" fill="var(--oil)" font-size="10">Balance / High-grade</text>
+          <rect x="32" y="20" width="20" height="70" fill="#c8c0b4" rx="2"/>
+          <path d="M32,90 L38,118 L46,118 L52,90 Z" fill="#aaa"/>
+          <ellipse cx="42" cy="120" rx="7" ry="4" fill="#e0e8d0"/>
+          <rect x="20" y="118" width="44" height="22" fill="#6b8090" rx="2" opacity="0.6"/>
+          <text x="42" y="160" text-anchor="middle" fill="#555" font-size="11">2. Conical</text>
+          <text x="42" y="173" text-anchor="middle" fill="var(--muted)" font-size="10">No stress at root; blocks oil</text>
+          <text x="85" y="95" fill="var(--ok)" font-size="9">← angled shoulder</text>
+          <text x="85" y="106" fill="var(--ok)" font-size="9">  stops oil creep</text>
+        </g>
+
+        <!-- 3. PLAIN SHOULDER -->
+        <g transform="translate(335,10)">
+          <text x="42" y="14" text-anchor="middle" fill="var(--muted)" font-size="10">English work only</text>
+          <rect x="32" y="20" width="20" height="78" fill="#c8c0b4" rx="2"/>
+          <rect x="38" y="98" width="8" height="20" fill="#aaa" rx="1"/>
+          <rect x="32" y="96" width="20" height="5" fill="#b0a898"/>
+          <ellipse cx="42" cy="120" rx="6" ry="3" fill="#e0e8d0"/>
+          <rect x="20" y="118" width="44" height="22" fill="#6b8090" rx="2" opacity="0.6"/>
+          <text x="42" y="160" text-anchor="middle" fill="#555" font-size="11">3. Plain Shoulder</text>
+          <text x="42" y="173" text-anchor="middle" fill="var(--warn)" font-size="10">Poor oil retention</text>
+        </g>
+
+        <!-- 4. CONE -->
+        <g transform="translate(495,10)">
+          <text x="42" y="14" text-anchor="middle" fill="var(--muted)" font-size="10">Alarm / low-grade</text>
+          <rect x="32" y="20" width="20" height="68" fill="#c8c0b4" rx="2"/>
+          <path d="M38,88 L42,112 L46,88 Z" fill="#aaa"/>
+          <rect x="20" y="118" width="44" height="22" fill="#6b8090" rx="2" opacity="0.6"/>
+          <path d="M33,118 L30,140 L54,140 L51,118 Z" fill="#4a6070" opacity="0.5"/>
+          <ellipse cx="42" cy="112" rx="3" ry="2" fill="#e8e0d0"/>
+          <text x="42" y="160" text-anchor="middle" fill="#555" font-size="11">4. Cone Pivot</text>
+          <text x="42" y="173" text-anchor="middle" fill="var(--muted)" font-size="10">Cup adjusts end-shake</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="cards" style="margin-top:20px;">
+      <div class="card card-ok">
+        <div class="card-icon">📏</div>
+        <h3>1. Straight Pivot</h3>
+        <p>The workhorse of watch movements — used in virtually all train wheels. End shake controlled by the shoulder pressing on the plate or jewel. Simple and effective.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="card-icon">🔺</div>
+        <h3>2. Conical Pivot</h3>
+        <p>Used for the balance wheel, and in high-grade movements for the escape and pallet arbors too. The angled shoulder has no sharp stress-concentrating root corner (stronger under shock), and the angle physically blocks oil from creeping up the arbor. Requires an end stone.</p>
+      </div>
+      <div class="card card-warn">
+        <div class="card-icon">🟫</div>
+        <h3>3. Plain Shoulder</h3>
+        <p>English watchwork only. Uses an end stone like the conical type, but has a flat shoulder — poor at stopping oil creep. Not used elsewhere.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔩</div>
+        <h3>4. Cone Pivot</h3>
+        <p>Found in alarm clocks and cheap timepieces. The pointed pivot tip sits in a cup-shaped screw. End shake adjusted by screwing the cup in or out. Cheap to make, but the contact area widens with wear, increasing friction. Not used in modern watches.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 3: SIZING & SHAKE -->
+<div class="section" id="sizing">
+  <div class="container">
+    <div class="section-tag">03 — Sizing & Shake</div>
+    <h2>Pivot Sizing, Shake & Oil Sinks</h2>
+    <div class="rule"></div>
+    <p>The goal is always <em>as thin as safely possible</em> — thin pivots produce less friction but are more fragile. Getting the size right, and ensuring the correct amount of play (shake), is fundamental to a movement that runs reliably for years.</p>
+
+    <div class="two-col">
+      <div class="info-card">
+        <div class="info-header oil">Side Shake — Lateral Play</div>
+        <div class="info-body">
+          The tiny gap between the pivot diameter and its hole. Too tight: binds and causes friction. Too loose: arbor misaligned, gear meshing depth affected.<br><br>
+          <strong>Rule of thumb: 1/10 to 1/20 of the pivot diameter.</strong><br><br>
+          At the bench: look for <em>consistency</em> across all wheels. A wheel with noticeably more or less shake than its neighbours signals a problem — especially in the escapement.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-header oil">End Shake — Axial Play</div>
+        <div class="info-body">
+          Tiny freedom for the arbor to move lengthwise along its own axis. Too little: arbor binds. Too much: wheel rocks, gear depth varies.<br><br>
+          <strong>Rule of thumb: 1/5 to 1/20 of the pivot diameter.</strong><br><br>
+          There is no single exact number for all movements — manufacturing quality sets what is appropriate. Focus on consistency within a given caliber.
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:20px;">
+      <strong>The oil sink rule:</strong> The shallow recess around a pivot hole traps oil using its sharp edge. Its depth must not exceed <strong>one third of the plate thickness</strong> — go deeper and you reduce the bearing area, accelerating wear. If there is no oil sink, it's usually because the plate was already too thin to allow one during manufacture.
+    </div>
+
+    <div class="two-col" style="margin-top:20px;">
+      <div class="info-card">
+        <div class="info-header">Pivot & Plate Materials</div>
+        <div class="info-body">
+          Pivots: <strong>EN8 steel</strong> (0.45% carbon) or <strong>Silver Steel</strong> (0.9–1.1% carbon), hardened and tempered after machining. Plates and bridges: plated brass. Jewels: synthetic ruby (sapphire-class hardness) — the pivot wears before the jewel does, by design.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-header">Bushings in Non-Jewelled Movements</div>
+        <div class="info-body">
+          Older movements used <strong>brass or bronze sleeves</strong> pressed into the pivot hole — think of them as replaceable metal jewels. Bronze is harder than brass and wears better. When worn, the bushing is pressed out and replaced without touching the plate. The cheapest movements have no bushing — the hole wears directly into the brass plate.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 4: PIVOT DEFECTS -->
+<div class="section" id="defects">
+  <div class="container">
+    <div class="section-tag">04 — Pivot Defects</div>
+    <h2>Pivot Defects — Every One You Need to Know</h2>
+    <div class="rule"></div>
+    <p>Most pivot problems show up as <strong>position-sensitive faults</strong> — the watch runs fine dial-up but stops in a vertical position. This is almost always your first clue to look at pivots or pivot holes. Here are all the defect types, most to least severe.</p>
+
+    <div class="fault-list">
+      <div class="fault-row">
+        <div class="fault-icon">⚠️</div>
+        <div class="fault-text">
+          <span class="badge b-danger">Severe</span>
+          <h4>Undercut (Necked) Pivot</h4>
+          <p>A groove in the pivot shaft — from wear or a manufacturing error — that concentrates stress. A 10% reduction in diameter cuts the pivot's strength by roughly one third. Vastly increases the risk of breakage from everyday shocks. Very common in vintage movements.</p>
+        </div>
+      </div>
+      <div class="fault-row">
+        <div class="fault-icon">🪝</div>
+        <div class="fault-text">
+          <span class="badge b-danger">Severe</span>
+          <h4>Short Pivot</h4>
+          <p>The pivot doesn't reach into the oil sink — at all times, or only at one end of its end shake travel. As the arbor wears the hole, an internal shoulder forms. The pivot's rounded end catches on this shoulder and forces the arbor sideways — sometimes with enough force to jam the entire train completely.</p>
+        </div>
+      </div>
+      <div class="fault-row">
+        <div class="fault-icon">🪛</div>
+        <div class="fault-text">
+          <span class="badge b-warn">Significant</span>
+          <h4>Undercut Shoulder</h4>
+          <p>A sharp edge on the shoulder digs into the plate surface, carving a groove and dramatically increasing friction each time the shoulder contacts the plate. Classic cause of position-sensitive stoppages — the fault only bites in positions where that shoulder is loaded.</p>
+        </div>
+      </div>
+      <div class="fault-row">
+        <div class="fault-icon">🔄</div>
+        <div class="fault-text">
+          <span class="badge b-warn">Significant</span>
+          <h4>Excessive Pivot Rounding</h4>
+          <p>Caused by improper filing — the pivot end is too rounded (approaching a hemisphere). The over-rounded taper pushes the arbor lengthwise as it rotates, pressing the opposite shoulder against the other plate. Especially damaging on the 3rd and escape arbors. Correct rounding should not exceed 1/5 to 1/4 of the pivot diameter.</p>
+        </div>
+      </div>
+      <div class="fault-row">
+        <div class="fault-icon">↪️</div>
+        <div class="fault-text">
+          <span class="badge b-warn">Significant</span>
+          <h4>Bent Pivot</h4>
+          <p>From careless handling or incorrect steel. The wobbling motion as it rotates creates subtle but persistent extra friction throughout the train — causing intermittent stops that are very hard to trace. Cannot usually be straightened. Replacement of the arbor is the correct solution.</p>
+        </div>
+      </div>
+      <div class="fault-row">
+        <div class="fault-icon">🌀</div>
+        <div class="fault-text">
+          <span class="badge b-warn">Progressive</span>
+          <h4>Worn Pivot (Circumferential Grooves)</h4>
+          <p>The most common pivot fault overall. Abrasive dirt embedded in the hole slowly grinds circumferential grooves around the pivot. Friction increases gradually over years. Light burnishing can help mildly worn pivots; severe cases require replacement.</p>
+        </div>
+      </div>
+      <div class="fault-row">
+        <div class="fault-icon">🔵</div>
+        <div class="fault-text">
+          <span class="badge b-oil">Mild</span>
+          <h4>Rounded Shoulder</h4>
+          <p>Usually not a serious problem on its own, but the rounded shoulder provides no sharp edge to stop oil creeping away from the pivot. In extreme cases the rounded shoulder can wedge into the pivot hole, producing position-sensitive misbehaviour.</p>
+        </div>
+      </div>
+      <div class="fault-row">
+        <div class="fault-icon">🔩</div>
+        <div class="fault-text">
+          <span class="badge b-oil">Mild / Progressive</span>
+          <h4>Rounded Pivot Root</h4>
+          <p>When the root of the pivot (where it meets the arbor body) is rounded rather than cleanly machined, it can become momentarily stuck in the hole. Typically produces position-sensitive stoppages or poor running that varies with the watch's orientation.</p>
+        </div>
+      </div>
+      <div class="fault-row">
+        <div class="fault-icon">⭕</div>
+        <div class="fault-text">
+          <span class="badge b-warn">Hole Defect</span>
+          <h4>Worn / Elongated Hole</h4>
+          <p>The hole becomes egg-shaped from wear, miscentring the arbor and altering gear meshing depth. Fixed by bushing — pressing a new metal sleeve into the plate and redrilling to the correct size at the correct centre.</p>
+        </div>
+      </div>
+      <div class="fault-row">
+        <div class="fault-icon">📐</div>
+        <div class="fault-text">
+          <span class="badge b-warn">Hole Defect — Bad Repair</span>
+          <h4>Non-Perpendicular Hole</h4>
+          <p>After re-bushing or re-jewelling, if the hole is drilled at even a slight angle to the plate, the pivot loses side shake in one direction only. This creates subtle friction in specific positions — a telltale sign of previous poor repair work, and very difficult to trace without systematic inspection.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5: OSCILLATOR -->
+<div class="section" id="oscillator">
+  <div class="container">
+    <div class="section-tag">05 — The Oscillator</div>
+    <h2>The Balance Wheel as Oscillator</h2>
+    <div class="rule"></div>
+    <p>The balance wheel is the oscillator of the watch. Every swing counts as a precise unit of time. The terminology here is used exactly by watchmakers and timegraphers — you need to know the difference between a vibration, an oscillation, and a cycle.</p>
+
+    <div class="vis">
+      <h3>🔁 Vibration → Oscillation → Frequency</h3>
+      <svg viewBox="0 0 580 120" width="100%" style="max-width:580px; display:block; margin:0 auto;">
+        <line x1="290" y1="10" x2="290" y2="110" stroke="#ccc" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <text x="290" y="8" text-anchor="middle" fill="var(--muted)" font-size="10">LINE OF CENTER</text>
+        <circle cx="290" cy="60" r="26" stroke="var(--oil)" stroke-width="2" fill="rgba(74,144,128,0.07)"/>
+        <circle cx="290" cy="60" r="4" fill="var(--oil)"/>
+        <line x1="264" y1="60" x2="316" y2="60" stroke="var(--oil)" stroke-width="1.5"/>
+        <line x1="290" y1="34" x2="290" y2="86" stroke="var(--oil)" stroke-width="1.5"/>
+        <path d="M 264 60 Q 195 15 145 60" stroke="#e67e22" stroke-width="2" fill="none" stroke-dasharray="6,3"/>
+        <text x="182" y="32" fill="#e67e22" font-size="11" text-anchor="middle">Vibration 1</text>
+        <text x="182" y="44" fill="#e67e22" font-size="10" text-anchor="middle">(e.g. 140°)</text>
+        <path d="M 316 60 Q 385 15 435 60" stroke="#2980b9" stroke-width="2" fill="none" stroke-dasharray="6,3"/>
+        <text x="398" y="32" fill="#2980b9" font-size="11" text-anchor="middle">Vibration 2</text>
+        <text x="398" y="44" fill="#2980b9" font-size="10" text-anchor="middle">(e.g. 140°)</text>
+        <text x="290" y="115" text-anchor="middle" fill="var(--ink)" font-size="11">Amplitude = 280° total  |  1 vibration + 1 vibration = 1 oscillation (cycle)</text>
+      </svg>
+    </div>
+
+    <div class="cards" style="margin-top:20px;">
+      <div class="card card-accent">
+        <div class="card-icon">〰️</div>
+        <h3>Vibration (Beat)</h3>
+        <p>One swing in one direction from the line of center. Vibrations per hour (VPH) and beats per hour (BPH) mean exactly the same thing — don't be confused by both terms being used.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="card-icon">🔄</div>
+        <h3>Oscillation (Cycle)</h3>
+        <p>Two vibrations — one left, one right. A complete back-and-forth. This is what Hertz counts: how many full cycles per second.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="card-icon">🎵</div>
+        <h3>Frequency (Hz)</h3>
+        <p>Cycles per second. 1 Hz = 1 cycle/sec = 2 beats/sec. Most vintage watches run at 2.5 Hz = 18,000 BPH. Modern watches often run at 4 Hz = 28,800 BPH.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="card-icon">📐</div>
+        <h3>Amplitude</h3>
+        <p>How far the balance travels in one vibration, measured in degrees. Healthy wristwatch: 270°–315°. Low amplitude points to a power delivery or friction problem upstream of the balance.</p>
+      </div>
+    </div>
+
+    <div class="calc-panel" style="margin-top:28px;">
+      <h3>🎛 Frequency & Beat Calculator</h3>
+      <div class="calc-row">
+        <label>Beats Per Hour (BPH)</label>
+        <input type="range" id="bphSlider" min="14400" max="36000" step="3600" value="18000" oninput="calcFreq()">
+        <span class="calc-val" id="bphVal">18,000</span>
+      </div>
+      <div class="result-panel">
+        <div class="result-grid">
+          <div class="result-item">
+            <span class="result-num" id="hz-val">2.5</span>
+            <span class="result-label">Hertz (Hz)</span>
+          </div>
+          <div class="result-item">
+            <span class="result-num" id="bps-val">5.0</span>
+            <span class="result-label">Beats / second</span>
+          </div>
+          <div class="result-item">
+            <span class="result-num" id="beat-dur">0.200</span>
+            <span class="result-label">Seconds / beat</span>
+          </div>
+          <div class="result-item">
+            <span class="result-num" id="cycle-dur">0.400</span>
+            <span class="result-label">Seconds / cycle</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6: FAULT-FINDING -->
+<div class="section" id="faultfinding">
+  <div class="container">
+    <div class="section-tag">06 — Fault-Finding Principles</div>
+    <h2>A Watch Is Just a Machine — And Something Changed</h2>
+    <div class="rule"></div>
+    <p>The single most important mindset shift in fault-finding: <strong>a watch almost certainly ran properly before it stopped.</strong> Failures from design or manufacturing defects are extremely rare. Something changed. Your entire investigation is about finding what.</p>
+
+    <div class="insight-box">
+      <h3>The Watchmaker's First Principle</h3>
+      <span class="big-em">"If a watch once ran and now doesn't — something changed. Find the change and you've found the fault."</span>
+      <p>This assumption narrows your search immediately. You're not asking "is this design correct?" — you're asking "what is different now compared to when it last worked?"</p>
+    </div>
+
+    <h3 style="font-family:'Lora',serif; font-size:22px; margin: 28px 0 14px; color:var(--steel);">Four Unique Challenges of Watch Movements</h3>
+    <div class="two-col">
+      <div class="info-card">
+        <div class="info-header">No Continuous Power Supply</div>
+        <div class="info-body">
+          Unlike an electric motor, the watch stores its own energy in the mainspring and runs down between windings. A <strong>tired mainspring</strong>, an under-winding owner, or the wrong mainspring all produce the same symptoms: intermittent stoppages, low amplitude, short run time. Always rule out power first.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-header">No Power Control</div>
+        <div class="info-body">
+          The mainspring delivers full power at all times — there is no throttle. The spring is selected to be just sufficient to run reliably, with a small friction reserve. Any increase in friction from aged oil or wear consumes that reserve very quickly. Even a small friction increase can stop the watch.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-header">Geared Up, Not Down</div>
+        <div class="info-body">
+          Most machines reduce speed from a fast source. Watches do the opposite — starting slow at the barrel and speeding up toward the escape wheel. This means <strong>torque decreases</strong> through the train (unlike most machines), making friction at every stage critically important to control.
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-header">Friction Is Everything</div>
+        <div class="info-body">
+          Because torque is already very low by the time it reaches the escapement, even small friction increases — from dried oil, a bent pivot, a poorly fitted jewel — can stop the watch entirely. Friction is behind the majority of problems seen on the workbench.
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:24px;">
+      <strong>Practical priority:</strong> When torque at the escape wheel seems insufficient, look for increased friction in the train before suspecting a weak mainspring. Friction problems are far more common. The mainspring was carefully selected at manufacture — it rarely loses strength without visible signs of fatigue.
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 7: WHY IT STOPS -->
+<div class="section" id="stops">
+  <div class="container">
+    <div class="section-tag">07 — Why It Stops</div>
+    <h2>The Eight Causes of Watch Failure</h2>
+    <div class="rule"></div>
+    <p>Every watch failure — from occasional pausing to complete stoppage — falls into one of these eight categories. Learning to recognise the signature of each one is what separates a competent technician from an expert diagnostician.</p>
+
+    <div class="stop-grid">
+      <div class="stop-card top">
+        <div class="stop-num">01 — Most Common</div>
+        <h4>Lubricant Failure</h4>
+        <p>Oil ages, thickens, and absorbs dust to form a stiff, gummy paste — eventually thick enough to stop the train. Even before that, the increased friction causes accelerated wear. The only fix is complete cleaning and re-oiling with fresh, correct lubricants. Affects virtually all watches over 5–10 years.</p>
+      </div>
+      <div class="stop-card top">
+        <div class="stop-num">02 — Very Common in Vintage</div>
+        <h4>Wear</h4>
+        <p>Rare in modern jewelled watches; frequent in vintage low-jewel movements. Pivot holes wear oval, pivots develop grooves, and gear teeth may round off. Lubrication slows wear but can't prevent it. Fix: bushing pivot holes, burnishing pivots, or sourcing replacement wheels.</p>
+      </div>
+      <div class="stop-card mid">
+        <div class="stop-num">03 — Common (Pre-1980s)</div>
+        <h4>Foreign Matter</h4>
+        <p>Dust, grit, or debris entering the case. A single hair across a gear can stop the train. Pre-1980s non-sealed cases are very vulnerable. Gold cases are especially prone — often thin and impossible to seal adequately. Water ingress causes corrosion and delayed stoppage.</p>
+      </div>
+      <div class="stop-card mid">
+        <div class="stop-num">04</div>
+        <h4>Power Source Reduction</h4>
+        <p>A "set" (fatigued) mainspring loses elasticity and stores less energy — causing short power reserve, intermittent stops, and low amplitude. An owner who habitually under-winds produces identical symptoms. Always ask about winding habits before condemning a spring.</p>
+      </div>
+      <div class="stop-card mid">
+        <div class="stop-num">05</div>
+        <h4>Shock or Accident</h4>
+        <p>Drops and knocks. In pre-1950s movements without shock protection, the thin balance staff pivots break easily — the balance's rim mass gives it strong leverage on the staff during impact. Modern shock systems (e.g. Incabloc, KIF) let the staff jewels shift and spring back safely. Fix for broken staff: replacement.</p>
+      </div>
+      <div class="stop-card low">
+        <div class="stop-num">06 — Rare in Modern Watches</div>
+        <h4>Mechanical Breakage</h4>
+        <p>Sudden, complete failure of a part. Very rare with modern shock systems and alloy mainsprings. A mainspring break sends a powerful shock wave through the train, potentially stripping gear teeth and bending pivots throughout — so one failure can cascade into many.</p>
+      </div>
+      <div class="stop-card low">
+        <div class="stop-num">07</div>
+        <h4>Mishandling</h4>
+        <p>Setting the date while the mechanism is engaged (roughly 8pm–2am on most movements) can strip date components. Immersion beyond the case's water resistance rating, or applying excessive force when winding, also qualify. Modern watches are more robust but still have design-specific vulnerabilities.</p>
+      </div>
+      <div class="stop-card low">
+        <div class="stop-num">08</div>
+        <h4>Bad Repairs & Interference</h4>
+        <p>Previous poor work compounds problems. Look for: damaged screw heads (wrong screwdriver), WD-40 or sewing machine oil used as lubricant, rough filed surfaces, wrong mainspring, fingerprints on plates (accelerate corrosion), and non-perpendicular jewels. Treat all evidence of bad repair as a flag to inspect everything thoroughly.</p>
+      </div>
+    </div>
+
+    <div class="callout warn" style="margin-top:28px;">
+      <strong>Pro diagnostic habit:</strong> Before disassembling, run the watch in multiple positions and note exactly which positions cause failure. A watch that fails only in one or two specific vertical positions almost always has a mechanical fault — bent pivot, worn hole, or escapement issue. Lubrication failures tend to cause consistent degradation across all positions. Position-sensitivity is your shortcut to the root cause.
+    </div>
+
+    <div class="vis" style="margin-top:24px;">
+      <h3>🔍 Signs of Poor Previous Repair Work</h3>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(155px,1fr)); gap:12px; margin-top:8px;">
+        <div style="background:var(--surface); border-radius:4px; padding:14px; font-size:13px; color:var(--muted);">
+          <div style="font-size:20px; margin-bottom:6px;">🔧</div>
+          <strong style="color:var(--ink); display:block; margin-bottom:4px;">Damaged screws</strong>
+          Burred or chewed heads from the wrong screwdriver
+        </div>
+        <div style="background:var(--surface); border-radius:4px; padding:14px; font-size:13px; color:var(--muted);">
+          <div style="font-size:20px; margin-bottom:6px;">🧴</div>
+          <strong style="color:var(--ink); display:block; margin-bottom:4px;">Wrong lubricant</strong>
+          WD-40, 3-in-1 oil, or grease in oil locations
+        </div>
+        <div style="background:var(--surface); border-radius:4px; padding:14px; font-size:13px; color:var(--muted);">
+          <div style="font-size:20px; margin-bottom:6px;">🖐️</div>
+          <strong style="color:var(--ink); display:block; margin-bottom:4px;">Fingerprints on plates</strong>
+          Sweat causes corrosion; signals careless, bare-handed handling
+        </div>
+        <div style="background:var(--surface); border-radius:4px; padding:14px; font-size:13px; color:var(--muted);">
+          <div style="font-size:20px; margin-bottom:6px;">📁</div>
+          <strong style="color:var(--ink); display:block; margin-bottom:4px;">Rough filed surfaces</strong>
+          Surfaces that should be polished left rough or scratched
+        </div>
+        <div style="background:var(--surface); border-radius:4px; padding:14px; font-size:13px; color:var(--muted);">
+          <div style="font-size:20px; margin-bottom:6px;">💪</div>
+          <strong style="color:var(--ink); display:block; margin-bottom:4px;">Wrong mainspring</strong>
+          Too strong causes knocking; too weak causes short run time
+        </div>
+        <div style="background:var(--surface); border-radius:4px; padding:14px; font-size:13px; color:var(--muted);">
+          <div style="font-size:20px; margin-bottom:6px;">📐</div>
+          <strong style="color:var(--ink); display:block; margin-bottom:4px;">Non-perpendicular jewel</strong>
+          Redrilled at an angle — creates position-specific friction that's very hard to trace
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div style="background:var(--steel); padding:60px 32px; text-align:center;">
+  <div style="max-width:680px; margin:0 auto;">
+    <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:4px; color:var(--oil-light); text-transform:uppercase; margin-bottom:16px;">Key Takeaways</div>
+    <div style="font-family:'Lora',serif; font-size:clamp(15px,2.2vw,20px); color:#e8e0d0; line-height:1.9; font-style:italic;">
+      Oil flows toward internal corners and away from external ones — design your lubrication around this.<br>
+      Pivots must be thin enough to minimise friction, yet strong enough to survive daily shocks.<br>
+      Friction consumes the tiny torque reserves that remain at the end of the train.<br>
+      When a watch stops — something changed. Find the change. That's your fault.
+    </div>
+  </div>
+</div>
+
+<footer>
+  A Visual Guide to Oil, Pivots & Fault-Finding · Mechanical Watchmaking Fundamentals Part III
+</footer>
+
+<script>
+  function answer(btn, qid, correct) {
+    const q = document.getElementById(qid);
+    q.querySelectorAll('.quiz-btn').forEach(b => b.disabled = true);
+    btn.classList.add(correct ? 'correct' : 'wrong');
+    const fb = document.getElementById(qid + '-fb');
+    fb.style.display = 'block';
+    fb.style.color = correct ? 'var(--ok)' : 'var(--danger)';
+    if (!correct) fb.textContent = '✗ Not quite — recall the four oil behaviour rules and try again.';
+  }
+
+  function calcFreq() {
+    const bph = parseInt(document.getElementById('bphSlider').value);
+    document.getElementById('bphVal').textContent = bph.toLocaleString();
+    const bps = bph / 3600;
+    const hz = bps / 2;
+    document.getElementById('hz-val').textContent = hz.toFixed(2);
+    document.getElementById('bps-val').textContent = bps.toFixed(2);
+    document.getElementById('beat-dur').textContent = (1 / bps).toFixed(3);
+    document.getElementById('cycle-dur').textContent = (1 / hz).toFixed(3);
+  }
+  calcFreq();
+</script>
+</body>
+</html>
